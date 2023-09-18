@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  db:
+    env_file:
+      - .env
+    image: postgres
+    restart: always
+    environment:
+      PGDATA: /var/lib/postgresql/data/
+      POSTGRES_INITDB_ARGS: "-A md5"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+
+  web:
+    env_file:
+      - .env
+    build: .
+    container_name: trading-application
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/home/TradingApp/web
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
