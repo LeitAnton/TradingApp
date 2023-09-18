@@ -12,4 +12,3 @@ repos:
     rev: ''
     hooks:
         - id: isort
-    name: isort (python)
