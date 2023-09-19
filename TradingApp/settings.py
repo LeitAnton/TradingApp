@@ -7,13 +7,11 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -23,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
+    'drf_yasg',
     'rest_framework',
     'user'
 ]
@@ -90,7 +89,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTH_USER_MODEL = 'user.User'
+AUTH_USER_MODEL = 'user.user'
 
 LANGUAGE_CODE = 'en-us'
 
@@ -106,8 +105,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'TradingApp.exceptions.core_exception_handler',
-    'NON_FIELD_ERRORS_KEY': 'error',
+    # 'NON_FIELD_ERRORS_KEY': 'error',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'apps.authentication.backends.JWTAuthentication',
+        'user.backends.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     ),
 }

@@ -1,61 +1,63 @@
-from rest_framework import status
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .models import User
 from .renderers import UserJSONRenderer
 from .serializers import (LoginSerializer, RegistrationSerializer,
                           UserSerializer)
 
 
-class RegistrationAPIView(APIView):
-    """Endpoint for creating a user. Available to everyone. """
+class UserViewSet(mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin,
+                  mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin,
+                  viewsets.GenericViewSet):
+    """ModelViewSet for class User. """
 
-    permission_classes = (AllowAny, )
-    renderer_classes = (UserJSONRenderer, )
-    serializer_class = RegistrationSerializer
+    queryset = User.objects.all()
+    # renderer_classes = (UserJSONRenderer,)
 
-    def post(self, request):
-        user = request.data.get('user', {})
+    default_serializer_class = UserSerializer
+    default_permission_classes = [AllowAny, ]
 
-        serializer = self.serializer_class(data=user)
+    serializer_classes = {
+        'retrieve': UserSerializer,
+        'update': UserSerializer,
+        'registration': RegistrationSerializer,
+        'login': LoginSerializer,
+    }
+
+    permission_classes = {
+        'retrieve': [IsAuthenticated],
+        'update': [IsAuthenticated],
+        'registration': [AllowAny, ],
+        'login': [AllowAny],
+    }
+
+    def get_serializer_class(self):
+        return self.serializer_classes.get(self.action, self.default_serializer_class)
+
+    def get_permissions(self):
+        return [permission() for permission in
+                self.permission_classes.get(self.action, self.default_permission_classes)]
+
+    @action(detail=False, methods=['post'])
+    def registration(self, request):
+        user = request.data
+        serializer = RegistrationSerializer(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-class LoginAPIView(APIView):
-    """Endpoint for login. Available to everyone. """
-
-    permission_classes = (AllowAny, )
-    renderer_classes = (UserJSONRenderer, )
-    serializer_class = LoginSerializer
-
-    def post(self, request):
+    @action(detail=False, methods=['post'])
+    def login(self, request):
         user = request.data.get('user', {})
 
-        serializer = self.serializer_class(data=user)
+        serializer = LoginSerializer(data=user)
         serializer.is_valid(raise_exception=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-
-class UserRetrieveUpdateAPIView(APIView):
-    permission_classes = (IsAuthenticated, )
-    renderer_classes = (UserJSONRenderer, )
-    serializer_class = UserSerializer
-
-    def retrieve(self, request, *args, **kwargs):
-        serializer = self.serializer_class(request.user)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def update(self, request, *args, **kwargs):
-        serializer_data = request.data.get('user', {})
-
-        serializer = self.serializer_class(request.user, serializer_data, partial=True)
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
