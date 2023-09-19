@@ -5,6 +5,11 @@ from .models import User
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """Serialization of user registration and new creation. """
+    role = serializers.CharField(
+        min_length=2,
+        max_length=2,
+        read_only=True
+    )
 
     password = serializers.CharField(
         max_length=128,
