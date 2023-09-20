@@ -81,6 +81,7 @@ class UserViewSet(mixins.ListModelMixin,
     def own_user(self, request, *args, **kwargs):
         user = User.objects.get(pk=request.user.id)
         return Response({
+            'pk': user.pk,
             'username': user.username,
             'role': user.role
         }, status=status.HTTP_200_OK)
@@ -103,7 +104,7 @@ class UserViewSet(mixins.ListModelMixin,
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['put'])
+    @action(detail=True, methods=['patch'])
     def block_user(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=kwargs['pk'])
         user.is_active = False
