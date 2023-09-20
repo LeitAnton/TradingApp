@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 
 class UserManager(BaseUserManager):
@@ -25,6 +26,7 @@ class UserManager(BaseUserManager):
             raise TypeError('Superusers must have a password.')
 
         user = self.create_user(username, password)
+        user.role = "AD"
         user.is_superuser = True
         user.is_staff = True
         user.save()
@@ -35,19 +37,15 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(db_index=True, max_length=255, unique=True)
 
-    USER = "US"
-    ANALYST = "AN"
-    ADMIN = "AD"
-    ROLES_CHOICES = [
-        (USER, "User"),
-        (ANALYST, "Analyst"),
-        (ADMIN, "Admin"),
-    ]
+    class RolesChoices(models.TextChoices):
+        USER = "US", _("User")
+        ANALYST = "AN", _("Analyst")
+        ADMIN = "AD", _("Admin")
 
     role = models.CharField(
         max_length=2,
-        choices=ROLES_CHOICES,
-        default=USER,
+        choices=RolesChoices.choices,
+        default=RolesChoices.USER,
     )
 
     is_active = models.BooleanField(default=True)
