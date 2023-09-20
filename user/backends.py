@@ -6,7 +6,7 @@ from .models import User
 
 
 class JWTAuthentication(authentication.BaseAuthentication):
-    authentication_header_prefix = 'Token'
+    authentication_header_prefix = 'Bearer'
 
     def authenticate(self, request):
         request.user = None
@@ -33,7 +33,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
 
     def _authenticate_credentials(self, request, token):
         try:
-            payload = jwt.decode(token, settings.SECRET_KEY)
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256', ])
         except Exception:
             msg = 'Ошибка аутентификации. Невозможно декодировать токеню'
             raise exceptions.AuthenticationFailed(msg)
