@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.core.exceptions import NON_FIELD_ERRORS
 from rest_framework import serializers
 
 from .models import User
@@ -52,9 +53,9 @@ class LoginSerializer(serializers.Serializer):
                 'A password is required to log in.'
             )
 
-        user = authenticate(username=username, password=password)
-
-        if user is None:
+        try:
+            user = User.objects.get(username=username)
+        except NON_FIELD_ERRORS:
             raise serializers.ValidationError(
                 'A user with this username and password was not found.'
             )
@@ -62,6 +63,13 @@ class LoginSerializer(serializers.Serializer):
         if not user.is_active:
             raise serializers.ValidationError(
                 'This user has been deactivated.'
+            )
+
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            raise serializers.ValidationError(
+                'A user with this username and password was not found.'
             )
 
         return {
@@ -72,6 +80,12 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('pk', 'role', 'username')
+
+
+class UpdateSerializer(serializers.ModelSerializer):
     """ Performs serialization and deserialization of User objects. """
 
     password = serializers.CharField(
@@ -97,5 +111,30 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
+
+        return instance
+
+
+class ResetPasswordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('role', 'username', 'password', 'token',)
+        read_only_fields = ('token',)
+
+    def update(self, instance, validated_data):
+        """ Resets the user's password. """
+
+        validated_data.pop('password', None)
+
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+
+        password = User.objects.make_random_password(length=24)
+        if password is not None:
+            instance.set_password(password)
+
+        instance.save()
+
+        # setattr(instance, 'not_encode_password', password)
 
         return instance
