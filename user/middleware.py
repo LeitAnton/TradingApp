@@ -23,7 +23,7 @@ class AuthenticationMiddleware:
     def __call__(self, request):
         exclusion_list = (
             '/',
-            '/api/swagger/',
+            '/swagger/',
             '/api/users/login/',
             '/api/users/registration/',
         )
