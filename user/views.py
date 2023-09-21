@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from TradingApp import settings
 
 from .models import User
+from .permissions import IsAnalystOrAdmin
 from .serializers import (LoginSerializer, RegistrationSerializer,
                           ResetPasswordSerializer, UpdateSerializer,
                           UserSerializer)
@@ -40,6 +41,7 @@ class UserViewSet(mixins.ListModelMixin,
         'registration': [AllowAny, ],
         'login': [AllowAny, ],
         'block_user': [IsAdminUser, ],
+        'list': [IsAnalystOrAdmin, ]
     }
 
     def get_serializer_class(self):
@@ -110,4 +112,4 @@ class UserViewSet(mixins.ListModelMixin,
         user.is_active = False
         user.save()
 
-        return Response({'success': 'User is block'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'User is block'}, status=status.HTTP_200_OK)
