@@ -4,19 +4,26 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import User
-from .permissions import IsAnalyst
-from .serializers import (ChangePasswordSerializer, LoginSerializer,
-                          RegistrationSerializer, ResetPasswordSerializer,
-                          UserSerializer)
+from user.models import User
+from user.permissions import IsAnalyst
+from user.serializers import (ChangePasswordSerializer, LoginSerializer,
+                              RegistrationSerializer, ResetPasswordSerializer,
+                              UserSerializer)
 
 
-class UserViewSet(mixins.ListModelMixin,
-                  mixins.DestroyModelMixin,
-                  mixins.RetrieveModelMixin,
-                  mixins.UpdateModelMixin,
-                  viewsets.GenericViewSet):
-    """ModelViewSet for class User. """
+class UserViewSet(viewsets.GenericViewSet,
+                  mixins.ListModelMixin):
+    """ModelViewSet for class User.
+
+    This viewset provides CRUD operations for User objects and additional actions like changing
+    passwords, resetting passwords, user registration, and login.
+
+    Attributes:
+        queryset (QuerySet): A queryset of User objects.
+        default_serializer_class (Serializer): The default serializer class for User objects.
+        default_permission_classes (list): The default permission classes for this viewset.
+
+    """
 
     queryset = User.objects.all()
 
@@ -24,7 +31,7 @@ class UserViewSet(mixins.ListModelMixin,
     default_permission_classes = [AllowAny, ]
 
     serializer_classes = {
-        'own_user': ChangePasswordSerializer,
+        'own_user': UserSerializer,
         'change_password': ChangePasswordSerializer,
         'reset_password': ResetPasswordSerializer,
         'registration': RegistrationSerializer,
@@ -42,17 +49,37 @@ class UserViewSet(mixins.ListModelMixin,
     }
 
     def get_serializer_class(self):
+        """Determine the serializer class based on the action being performed.
+
+        Returns:
+           Serializer: The serializer class for the current action.
+        """
         return self.serializer_classes.get(self.action, self.default_serializer_class)
 
     def get_permissions(self):
+        """Determine the permissions required for the current action.
+
+        Returns:
+            list: A list of permission classes for the current action.
+        """
         return [permission() for permission in
                 self.permission_classes.get(self.action, self.default_permission_classes)]
 
-    @action(detail=False, methods=['put'])
+    @action(detail=False, methods=['patch'])
     def change_password(self, request, *args, **kwargs):
+        """Change the user's password.
+
+        Args:
+            request (Request): The HTTP request object.
+            *args: Variable-length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response indicating the success of the password change.
+        """
         serializer_data = request.data
 
-        serializer = ChangePasswordSerializer(
+        serializer = self.get_serializer_class()(
             request.user, data=serializer_data, partial=True
         )
         serializer.is_valid(raise_exception=True)
@@ -62,26 +89,54 @@ class UserViewSet(mixins.ListModelMixin,
 
     @action(detail=False, methods=['put'])
     def reset_password(self, request, *args, **kwargs):
+        """Change the user's password.
+
+        Args:
+            request (Request): The HTTP request object.
+            *args: Variable-length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response indicating the success of the password change.
+        """
         serializer_data = request.data
 
-        serializer = ResetPasswordSerializer(
+        serializer = self.get_serializer_class()(
             request.user, data=serializer_data, partial=True
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
+        # TODO Send password on the email
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def own_user(self, request, *args, **kwargs):
+        """Retrieve the user's own information.
+
+        Args:
+            request (Request): The HTTP request object.
+            *args: Variable-length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response containing the user's information.
+        """
         user = get_object_or_404(User, pk=request.user.id)
-        serializer = UserSerializer(user)
+        serializer = self.get_serializer_class()(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def registration(self, request):
+        """Register a new user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: A response indicating the success of the user registration.
+        """
         user = request.data
-        serializer = RegistrationSerializer(data=user)
+        serializer = self.get_serializer_class()(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -89,15 +144,31 @@ class UserViewSet(mixins.ListModelMixin,
 
     @action(detail=False, methods=['post'])
     def login(self, request):
-        user = request.data
+        """Log in a user.
 
-        serializer = LoginSerializer(data=user)
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: A response indicating the success of the user login.
+        """
+        serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'])
     def block_user(self, request, *args, **kwargs):
+        """Block a user.
+
+        Args:
+            request (Request): The HTTP request object.
+            *args: Variable-length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Response: A response indicating that the user has been blocked.
+        """
         user = get_object_or_404(User, pk=kwargs['pk'])
         user.is_active = False
         user.save()

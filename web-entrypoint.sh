@@ -1,6 +1,6 @@
 #!/bin/sh
-ENV HOST=${HOST}
-ENV PORT=${PORT}
+HOST=${HOST}
+PORT=${PORT}
 
 if [ "$POSTGRES_DATABASE" = "postgres" ]
 then

@@ -14,12 +14,21 @@ services:
     ports:
       - "5432:5432"
 
+  redis:
+    restart: unless-stopped
+    image: redis:7.0.5-alpine
+    expose:
+      - 6479
+
   web:
+    restart: unless-stopped
     env_file:
       - .env
     build: .
+    entrypoint: /home/TradingApp/web/web-entrypoint.sh
     container_name: trading-application
     command: python manage.py runserver 0.0.0.0:8000
+#    command: gunicorn TradingApp.wsgi --bind 0.0.0.0:8000 --workers 4 --threads 4
     volumes:
       - .:/home/TradingApp/web
     ports:
@@ -27,5 +36,49 @@ services:
     depends_on:
       - db
 
+  worker:
+    restart: unless-stopped
+    env_file:
+      - .env
+    build: .
+    entrypoint: /home/TradingApp/web/worker-entrypoint.sh
+    volumes:
+      - .:/home/TradingApp/web
+    depends_on:
+      - db
+      - redis
+      - web
+
+  celery-beat:
+    restart: unless-stopped
+    env_file:
+      - .env
+    build: .
+    entrypoint: /home/TradingApp/web/celery-beat-entrypoint.sh
+    volumes:
+      - .:/home/TradingApp/web
+    depends_on:
+      - db
+      - redis
+      - web
+      - worker
+
+  flower:
+    restart: unless-stopped
+    env_file:
+      - .env
+    image: mher/flower
+    container_name: flower
+    command: celery flower
+    environment:
+      FLOWER_PORT: "5555"
+    ports:
+      - "5555:5555"
+    volumes:
+      - flower_data:/data
+    depends_on:
+      - worker
+
 volumes:
   postgres_data:
+  flower_data:

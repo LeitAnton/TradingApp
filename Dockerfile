@@ -35,9 +35,11 @@ COPY --from=builder /usr/src/web/wheels /wheels
 COPY --from=builder /usr/src/web/requirements.txt .
 RUN pip install --no-cache-dir /wheels/*
 
-COPY TradingApp $APP_HOME
+COPY . $APP_HOME
 
 RUN chown -R $USER:$USER $APP_HOME
 USER $USER
 
-ENTRYPOINT ["sh", "/home/TradingApp/web/entrypoint.sh"]
+RUN chmod +x $APP_HOME/web-entrypoint.sh
+RUN chmod +x $APP_HOME/worker-entrypoint.sh
+RUN chmod +x $APP_HOME/celery-beat-entrypoint.sh

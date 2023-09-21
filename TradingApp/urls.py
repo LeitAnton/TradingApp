@@ -4,6 +4,7 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 
+# Define the Swagger schema view with custom API information
 schema_view = get_schema_view(
     openapi.Info(
         title='Snippets API',
@@ -22,6 +23,8 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
-    path('api/', include('user.urls')),
-    path('admin/', admin.site.urls),
+    path('api/users/', include('user.urls')),  # Include URLs for the 'user' app
+    path('api/business/', include('business.urls')),  # Include URLs for the 'business' app
+
+    path('admin/', admin.site.urls),  # Admin site URL configuration
 ]

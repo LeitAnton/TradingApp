@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -11,7 +12,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["127.0.0.1", "0.0.0.0", "localhost"]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -24,8 +25,11 @@ INSTALLED_APPS = [
     'django_extensions',
     'drf_yasg',
     'rest_framework',
+    'django_celery_results',
+    'django_celery_beat',
 
-    'user'
+    'user',
+    'business',
 ]
 
 MIDDLEWARE = [
@@ -104,6 +108,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'user.authentification.CsrfExemptSessionAuthentication',
     ),
+}
+
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+
+CELERY_BEAT_SCHEDULE = {
+    'check_orders': {
+        'task': 'business.tasks.check_orders',
+        'schedule': timedelta(minutes=10),
+    },
 }
