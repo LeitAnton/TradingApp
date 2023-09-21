@@ -1,5 +1,4 @@
 from django.contrib.auth import authenticate
-from django.core.exceptions import NON_FIELD_ERRORS
 from rest_framework import serializers
 
 from .models import User
@@ -24,7 +23,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'role', 'password', 'token']
+        fields = ('username', 'role', 'password', 'login',)
 
     def create(self, validated_data):
         """Create object of User. """
@@ -53,18 +52,6 @@ class LoginSerializer(serializers.Serializer):
                 'A password is required to log in.'
             )
 
-        try:
-            user = User.objects.get(username=username)
-        except NON_FIELD_ERRORS:
-            raise serializers.ValidationError(
-                'A user with this username and password was not found.'
-            )
-
-        if not user.is_active:
-            raise serializers.ValidationError(
-                'This user has been deactivated.'
-            )
-
         user = authenticate(username=username, password=password)
 
         if user is None:
@@ -85,7 +72,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('pk', 'role', 'username')
 
 
-class UpdateSerializer(serializers.ModelSerializer):
+class ChangePasswordSerializer(serializers.ModelSerializer):
     """ Performs serialization and deserialization of User objects. """
 
     password = serializers.CharField(
@@ -96,8 +83,7 @@ class UpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('role', 'username', 'password', 'token',)
-        read_only_fields = ('token',)
+        fields = ('role', 'username', 'password',)
 
     def update(self, instance, validated_data):
         """ Performs an update User. """
@@ -118,8 +104,7 @@ class UpdateSerializer(serializers.ModelSerializer):
 class ResetPasswordSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('role', 'username', 'password', 'token',)
-        read_only_fields = ('token',)
+        fields = ('role', 'username', 'password',)
 
     def update(self, instance, validated_data):
         """ Resets the user's password. """
@@ -134,7 +119,5 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
             instance.set_password(password)
 
         instance.save()
-
-        # setattr(instance, 'not_encode_password', password)
 
         return instance

@@ -1,10 +1,10 @@
 from rest_framework import permissions
 
 
-class IsAnalystOrAdmin(permissions.BasePermission):
+class IsAnalyst(permissions.BasePermission):
     def has_permission(self, request, view):
         try:
-            if request.user.role in ['AN', 'AD']:
+            if request.user.role in 'AN':
                 return True
 
         except AttributeError:

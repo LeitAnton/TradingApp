@@ -2,62 +2,43 @@ from datetime import datetime, timedelta
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-
-class UserManager(BaseUserManager):
-    def create_user(self, username, password=None):
-        """ Create and return user. """
-        if username is None:
-            raise TypeError('Users must have a username.')
-
-        user = self.model(username=username)
-        user.set_password(password)
-        user.save()
-
-        return user
-
-    def create_superuser(self, username, password):
-        """ Create and return superuser. """
-        if password is None:
-            raise TypeError('Superusers must have a password.')
-
-        user = self.create_user(username, password)
-        user.role = "AD"
-        user.is_superuser = True
-        user.is_staff = True
-        user.save()
-
-        return user
+from user.manager import UserManager
 
 
-class User(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(db_index=True, max_length=255, unique=True)
+class CreatedDate(models.Model):
+    created_date = models.DateTimeField(auto_now_add=True, null=True)
 
+    class Meta:
+        abstract = True
+
+
+class UpdatedDate(models.Model):
+    updated_date = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class User(AbstractBaseUser, PermissionsMixin, CreatedDate, UpdatedDate):
     class RolesChoices(models.TextChoices):
-        USER = "US", _("User")
-        ANALYST = "AN", _("Analyst")
-        ADMIN = "AD", _("Admin")
+        USER = 'US', _('User')
+        ANALYST = 'AN', _('Analyst')
+        ADMIN = 'AD', _('Admin')
 
     role = models.CharField(
         max_length=2,
         choices=RolesChoices.choices,
         default=RolesChoices.USER,
     )
-
+    username = models.CharField(db_index=True, max_length=255, unique=True)
     is_active = models.BooleanField(default=True)
-
     is_staff = models.BooleanField(default=False)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    updated_at = models.DateTimeField(auto_now=True)
-
     USERNAME_FIELD = 'username'
-
     objects = UserManager()
 
     def __str__(self):

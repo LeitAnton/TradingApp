@@ -1,16 +1,13 @@
-import jwt
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from TradingApp import settings
-
 from .models import User
-from .permissions import IsAnalystOrAdmin
-from .serializers import (LoginSerializer, RegistrationSerializer,
-                          ResetPasswordSerializer, UpdateSerializer,
+from .permissions import IsAnalyst
+from .serializers import (ChangePasswordSerializer, LoginSerializer,
+                          RegistrationSerializer, ResetPasswordSerializer,
                           UserSerializer)
 
 
@@ -27,8 +24,8 @@ class UserViewSet(mixins.ListModelMixin,
     default_permission_classes = [AllowAny, ]
 
     serializer_classes = {
-        'own_user': UpdateSerializer,
-        'change_password': UpdateSerializer,
+        'own_user': ChangePasswordSerializer,
+        'change_password': ChangePasswordSerializer,
         'reset_password': ResetPasswordSerializer,
         'registration': RegistrationSerializer,
         'login': LoginSerializer,
@@ -41,7 +38,7 @@ class UserViewSet(mixins.ListModelMixin,
         'registration': [AllowAny, ],
         'login': [AllowAny, ],
         'block_user': [IsAdminUser, ],
-        'list': [IsAnalystOrAdmin, ]
+        'list': [IsAnalyst | IsAdminUser]
     }
 
     def get_serializer_class(self):
@@ -55,7 +52,7 @@ class UserViewSet(mixins.ListModelMixin,
     def change_password(self, request, *args, **kwargs):
         serializer_data = request.data
 
-        serializer = UpdateSerializer(
+        serializer = ChangePasswordSerializer(
             request.user, data=serializer_data, partial=True
         )
         serializer.is_valid(raise_exception=True)
@@ -81,12 +78,9 @@ class UserViewSet(mixins.ListModelMixin,
 
     @action(detail=False, methods=['get'])
     def own_user(self, request, *args, **kwargs):
-        user = User.objects.get(pk=request.user.id)
-        return Response({
-            'pk': user.pk,
-            'username': user.username,
-            'role': user.role
-        }, status=status.HTTP_200_OK)
+        user = get_object_or_404(User, pk=request.user.id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def registration(self, request):

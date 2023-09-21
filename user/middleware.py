@@ -5,15 +5,14 @@ from rest_framework.generics import get_object_or_404
 
 from TradingApp import settings
 
-# from django.core.exceptions import PermissionDenied
 from .models import User
 
 
 class AuthenticationMiddleware:
     def raise_error(self, msg):
         error = {
-            "error_code": status.HTTP_403_FORBIDDEN,
-            "error_message": msg,
+            'error_code': status.HTTP_403_FORBIDDEN,
+            'error_message': msg,
         }
 
         raise PermissionDenied(error)
@@ -24,6 +23,7 @@ class AuthenticationMiddleware:
     def __call__(self, request):
         exclusion_list = (
             '/',
+            '/api/swagger/',
             '/api/users/login/',
             '/api/users/registration/',
         )
