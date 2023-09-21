@@ -70,10 +70,6 @@ class UserViewSet(mixins.ListModelMixin,
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        # not_encode_password = serializer.data.serializer.instance.not_encode_password
-        # response = dict(serializer.data)
-        # response['password'] = not_encode_password
-
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])

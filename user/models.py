@@ -10,21 +10,21 @@ from django.utils.translation import gettext_lazy as _
 from user.manager import UserManager
 
 
-class CreatedDate(models.Model):
+class CreatedDateTime(models.Model):
     created_date = models.DateTimeField(auto_now_add=True, null=True)
 
     class Meta:
         abstract = True
 
 
-class UpdatedDate(models.Model):
+class UpdatedDateTime(models.Model):
     updated_date = models.DateTimeField(auto_now=True, null=True)
 
     class Meta:
         abstract = True
 
 
-class User(AbstractBaseUser, PermissionsMixin, CreatedDate, UpdatedDate):
+class User(AbstractBaseUser, PermissionsMixin, CreatedDateTime, UpdatedDateTime):
     class RolesChoices(models.TextChoices):
         USER = 'US', _('User')
         ANALYST = 'AN', _('Analyst')
