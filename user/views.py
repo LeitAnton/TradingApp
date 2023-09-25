@@ -10,6 +10,8 @@ from user.serializers import (ChangePasswordSerializer, LoginSerializer,
                               RegistrationSerializer, ResetPasswordSerializer,
                               UserSerializer)
 
+from user.tasks import send_mail_about_reset_password
+
 
 class UserViewSet(viewsets.GenericViewSet,
                   mixins.ListModelMixin):
@@ -106,7 +108,12 @@ class UserViewSet(viewsets.GenericViewSet,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # TODO Send password on the email
+
+        send_mail_about_reset_password.delay(
+            password=f'{serializer.data["password"]}',
+            email=request.user.email
+        )
+
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])

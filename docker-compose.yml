@@ -20,6 +20,12 @@ services:
     expose:
       - 6479
 
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   web:
     restart: unless-stopped
     env_file:
@@ -28,7 +34,6 @@ services:
     entrypoint: /home/TradingApp/web/web-entrypoint.sh
     container_name: trading-application
     command: python manage.py runserver 0.0.0.0:8000
-#    command: gunicorn TradingApp.wsgi --bind 0.0.0.0:8000 --workers 4 --threads 4
     volumes:
       - .:/home/TradingApp/web
     ports:
