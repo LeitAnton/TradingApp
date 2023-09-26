@@ -1,8 +1,8 @@
 from rest_framework import routers
 
-from .views import UserViewSet
+from user.views import UserViewSet
 
 router = routers.SimpleRouter()
-router.register(r'users', UserViewSet)
+router.register(r'user', UserViewSet)
 
 urlpatterns = router.urls
