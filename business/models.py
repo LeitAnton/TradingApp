@@ -96,9 +96,9 @@ class Order(models.Model):
         max_length=1,
         choices=Action.choices
     )
-    quantity = models.FloatField()
-    price = models.FloatField()
-    match_price_per_currency_quantity = models.FloatField()
+    quantity = models.FloatField(default=0.0)
+    price = models.FloatField(default=0.0)
+    match_price_per_currency_quantity = models.FloatField(default=0.0)
 
     def __str__(self):
         return (f"Username: {self.user.username} "

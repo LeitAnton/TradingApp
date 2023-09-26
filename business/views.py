@@ -48,8 +48,9 @@ class CurrencyViewSet(ModelViewSet):
 
 class OrderViewSet(viewsets.GenericViewSet,
                    mixins.RetrieveModelMixin,
-                   mixins.ListModelMixin,
                    mixins.CreateModelMixin,
+                   mixins.UpdateModelMixin,
+                   mixins.ListModelMixin,
                    mixins.DestroyModelMixin):
     """ViewSet for the Order model.
 
@@ -99,47 +100,6 @@ class OrderViewSet(viewsets.GenericViewSet,
         """
         return [permission() for permission in
                 self.permission_classes.get(self.action, self.default_permission_classes)]
-
-    def create(self, request, *args, **kwargs):
-        """Create a new Order instance.
-
-        Args:
-            request (HttpRequest): The incoming HTTP request.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Response: The HTTP response indicating the status of the creation operation.
-
-        """
-        serializer = self.get_serializer_class()(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def update(self, request, *args, **kwargs):
-        """Update an existing Order instance.
-
-        Args:
-            request (HttpRequest): The incoming HTTP request.
-            *args: Variable length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Response: The HTTP response indicating the status of the update operation.
-
-        """
-        order_id = kwargs.get('pk')
-        instance = get_object_or_404(Order, id=order_id)
-        self.check_object_permissions(request, instance)
-        serializer = self.get_serializer_class()(
-            request.user, data=request.data, partial=True, context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def own_orders(self, request, *args, **kwargs):

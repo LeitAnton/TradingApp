@@ -8,10 +8,10 @@ from django.core.mail import send_mail
 def check_orders():
     orders = Order.objects.all()
     for order in orders:
-        close_order(order)
+        close_order.delay(order)
 
 
-@shared_task
+@app.task
 def close_order(order):
     if order.check_match_price():
         order.recalculation_of_price_or_quantity()

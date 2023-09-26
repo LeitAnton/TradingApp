@@ -1,8 +1,8 @@
 import os
-from datetime import timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
+from TradingApp.celery import CELERY_BEAT_SCHEDULE
 
 load_dotenv()
 
@@ -115,12 +115,7 @@ REST_FRAMEWORK = {
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
 
-CELERY_BEAT_SCHEDULE = {
-    'check_orders': {
-        'task': 'business.tasks.check_orders',
-        'schedule': timedelta(minutes=10),
-    },
-}
+CELERY_BEAT_SCHEDULE = CELERY_BEAT_SCHEDULE
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST')
