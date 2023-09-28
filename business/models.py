@@ -101,7 +101,7 @@ class Order(models.Model):
     match_price_per_currency_quantity = models.FloatField(default=0.0)
 
     def __str__(self):
-        return (f"Username: {self.user.username} "
+        return (f"User: {self.user.username} "
                 f"| {self.quantity} {self.currency.symbol} -- {self.price} USD "
                 f"| Action: {self.action}"
                 f"| Match price: {self.match_price_per_currency_quantity} | Currency price "
@@ -160,6 +160,23 @@ class History(models.Model):
     price = models.FloatField()
 
     def __str__(self):
-        return (f"Username: {self.user.username} "
+        return (f"User: {self.user.username} "
                 f"| {self.quantity} {self.currency.symbol} -- {self.price} USD "
                 f"| Action: {self.action}")
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(User, models.CASCADE)
+    currency = models.ForeignKey(Currency, models.CASCADE, related_name='subscriptions')
+
+    def __str__(self):
+        return f'User: {self.user.username} -- Currency: {self.currency.title}'
+
+
+class Portfolio(models.Model):
+    user = models.ForeignKey(User, models.CASCADE)
+    currency = models.ForeignKey(Currency, models.CASCADE)
+    quantity = models.FloatField(default=0.0)
+
+    def __str__(self):
+        return f'User: {self.user.username} | Currency: {self.currency.title} | Quantity: {self.quantity}'
