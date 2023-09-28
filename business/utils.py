@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from business.models import Order
 
 
 def check_create_by_price_or_quantity(validated_data):
@@ -21,7 +22,12 @@ def check_create_by_price_or_quantity(validated_data):
     create_by_price_or_quantity = validated_data['create_by_price_or_quantity']
     currency = validated_data['currency']
 
-    if create_by_price_or_quantity.lower() == 'p':
+    if create_by_price_or_quantity not in [Order.CreateByPriceOrQuantity.PRICE, Order.CreateByPriceOrQuantity.QUANTITY]:
+        raise serializers.ValidationError(
+            "Create by price or quantity should be equal 'Q' or 'P'. "
+        )
+
+    if create_by_price_or_quantity == Order.CreateByPriceOrQuantity.PRICE:
         # If create_by_price_or_quantity is equal to 'P', make sure that 'price' is set.
         if validated_data['price'] is None:
             raise serializers.ValidationError(
@@ -30,7 +36,7 @@ def check_create_by_price_or_quantity(validated_data):
 
         validated_data['quantity'] = currency.get_quantity_by_price(validated_data['price'])
 
-    elif create_by_price_or_quantity.lower() == 'q':
+    elif create_by_price_or_quantity == Order.CreateByPriceOrQuantity.QUANTITY:
         # If create_by_price_or_quantity is equal to 'Q', make sure that 'quantity' is set.
         if validated_data['quantity'] is None:
             raise serializers.ValidationError(
@@ -62,7 +68,7 @@ def check_order_type(validated_data):
     order_type = validated_data['order_type']
     currency = validated_data['currency']
 
-    if order_type.lower() == 'm':
+    if order_type == Order.OrderType.MANUAL:
         validated_data['match_price_per_currency_quantity'] = currency.price_per_quantity
 
     if validated_data['match_price_per_currency_quantity'] is None:
