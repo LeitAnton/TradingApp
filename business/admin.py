@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from business.models import Currency, Order, History
+from business.models import Currency, Order, History, Portfolio
 
 
 class CurrencyAdmin(admin.ModelAdmin):
@@ -61,3 +61,4 @@ class HistoryAdmin(admin.ModelAdmin):
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(History, HistoryAdmin)
+admin.site.register(Portfolio)

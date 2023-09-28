@@ -2,14 +2,14 @@ from django.http import Http404
 from django.shortcuts import get_list_or_404
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from business.models import Currency, Order
+from business.models import Currency, Order, Portfolio
 from business.serializers import (CreateOrderSerializer, CurrencySerializer,
-                                  OrderSerializer, UpdateOrderSerializer)
+                                  OrderSerializer, UpdateOrderSerializer, PortfolioSerializer, AddToPortfolioSerializer)
+from user.models import User
 from user.permissions import IsAnalyst, IsAnAuthor
 
 
@@ -122,3 +122,51 @@ class OrderViewSet(viewsets.GenericViewSet,
 
         serializers = self.get_serializer_class()(orders, many=True)
         return Response(serializers.data, status=status.HTTP_200_OK)
+
+
+class PortfolioViewSet(viewsets.GenericViewSet,
+                       mixins.ListModelMixin,
+                       mixins.CreateModelMixin,
+                       mixins.DestroyModelMixin):
+    queryset = Portfolio.objects.all()
+    default_serializer_class = PortfolioSerializer
+    default_permission_classes = [IsAdminUser, ]
+
+    permission_classes = {
+        'list': [IsAuthenticated, ],
+        'create': [IsAuthenticated, ],
+        'destroy': [IsAnAuthor | IsAdminUser],
+    }
+    serializer_classes = {
+        'list': PortfolioSerializer,
+        'create': AddToPortfolioSerializer,
+        'destroy': PortfolioSerializer,
+    }
+
+    def get_serializer_class(self):
+        """Determine the serializer class based on the action being performed.
+
+        Returns:
+           Serializer: The serializer class for the current action.
+        """
+        return self.serializer_classes.get(self.action, self.default_serializer_class)
+
+    def get_permissions(self):
+        """Get the appropriate permissions for the current action.
+
+        Returns:
+            list: The list of permission classes for the current action.
+
+        """
+        return [permission() for permission in
+                self.permission_classes.get(self.action, self.default_permission_classes)]
+
+    def list(self, request,  *args, **kwargs):
+        super().list(request,  *args, **kwargs)
+        if request.user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
+            queryset = Portfolio.objects.filter(user=request.user)
+        else:
+            queryset = Portfolio.objects.all()
+
+        serializer = self.get_serializer_class()(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

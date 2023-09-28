@@ -1,7 +1,8 @@
+from django.db import IntegrityError
 from rest_framework import serializers
 
 import business.utils
-from business.models import Currency, Order
+from business.models import Currency, Order, Portfolio
 
 
 class CurrencySerializer(serializers.ModelSerializer):
@@ -135,3 +136,24 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class PortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Portfolio
+        fields = ('pk', 'user', 'currency')
+
+
+class AddToPortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Portfolio
+        fields = ('pk', 'user', 'currency')
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        validated_data['user'] = user
+        portfolio = Portfolio.objects.filter(user=validated_data['user'], currency=validated_data['currency'])
+        if not portfolio:
+            return Portfolio.objects.create(**validated_data)
+
+        raise IntegrityError('This currency is already exist in your portfolio. ')

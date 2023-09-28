@@ -163,3 +163,11 @@ class History(models.Model):
         return (f"Username: {self.user.username} "
                 f"| {self.quantity} {self.currency.symbol} -- {self.price} USD "
                 f"| Action: {self.action}")
+
+
+class Portfolio(models.Model):
+    user = models.ForeignKey(User, models.CASCADE)
+    currency = models.ForeignKey(Currency, models.CASCADE, related_name='currencies')
+
+    def __str__(self):
+        return f'User: {self.user.username} -- Currency: {self.currency}'
