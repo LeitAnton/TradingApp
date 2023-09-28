@@ -6,9 +6,10 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from business.models import Currency, Order, Portfolio
+from business.models import Currency, Order, Portfolio, History
 from business.serializers import (CreateOrderSerializer, CurrencySerializer,
-                                  OrderSerializer, UpdateOrderSerializer, PortfolioSerializer, AddToPortfolioSerializer)
+                                  OrderSerializer, UpdateOrderSerializer, PortfolioSerializer, AddToPortfolioSerializer,
+                                  HistorySerializer)
 from user.models import User
 from user.permissions import IsAnalyst, IsAnAuthor
 
@@ -161,12 +162,29 @@ class PortfolioViewSet(viewsets.GenericViewSet,
         return [permission() for permission in
                 self.permission_classes.get(self.action, self.default_permission_classes)]
 
-    def list(self, request,  *args, **kwargs):
-        super().list(request,  *args, **kwargs)
+    def list(self, request, *args, **kwargs):
+        super().list(request, *args, **kwargs)
         if request.user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
             queryset = Portfolio.objects.filter(user=request.user)
         else:
             queryset = Portfolio.objects.all()
 
         serializer = self.get_serializer_class()(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class HistoryViewSet(viewsets.GenericViewSet,
+                     mixins.ListModelMixin):
+    queryset = History.objects.all()
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = HistorySerializer
+
+    def list(self, request, *args, **kwargs):
+        super().list(request, *args, **kwargs)
+        if request.user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
+            queryset = History.objects.filter(user=request.user).order_by('user')
+        else:
+            queryset = History.objects.all()
+
+        serializer = HistorySerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
