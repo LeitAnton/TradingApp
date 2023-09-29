@@ -143,12 +143,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         model = Subscription
         fields = ('pk', 'user', 'currency')
 
-
-class SubscribeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Subscription
-        fields = ('pk', 'user', 'currency')
-
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user

@@ -1,5 +1,6 @@
 from celery import shared_task
 from django.core.mail import send_mail
+from django.db import transaction
 from rest_framework.generics import get_object_or_404
 
 from TradingApp.celery import app
@@ -14,6 +15,7 @@ def check_orders():
 
 
 @app.task
+@transaction.atomic
 def close_order(order_id):
     order = get_object_or_404(Order, pk=order_id)
     if order.check_match_price():
