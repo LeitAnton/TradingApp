@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from rest_framework import serializers
 
 import business.utils
-from business.models import Currency, Order, Portfolio, History
+from business.models import Currency, Order, Subscription, History, Portfolio
 
 
 class CurrencySerializer(serializers.ModelSerializer):
@@ -138,23 +138,23 @@ class UpdateOrderSerializer(serializers.ModelSerializer):
         return instance
 
 
-class PortfolioSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Portfolio
+        model = Subscription
         fields = ('pk', 'user', 'currency')
 
 
-class AddToPortfolioSerializer(serializers.ModelSerializer):
+class SubscribeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Portfolio
+        model = Subscription
         fields = ('pk', 'user', 'currency')
 
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user
-        portfolio = Portfolio.objects.filter(user=validated_data['user'], currency=validated_data['currency'])
+        portfolio = Subscription.objects.filter(user=validated_data['user'], currency=validated_data['currency'])
         if not portfolio:
-            return Portfolio.objects.create(**validated_data)
+            return Subscription.objects.create(**validated_data)
 
         raise IntegrityError('This currency is already exist in your portfolio. ')
 
@@ -163,3 +163,9 @@ class HistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = History
         fields = ('pk', 'user', 'currency', 'action', 'date_time', 'quantity', 'price')
+
+
+class PortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Portfolio
+        fields = ('pk', 'user', 'currency', 'quantity')

@@ -6,12 +6,22 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from business.models import Currency, Order, Portfolio, History
+from business.models import Currency, Order, Subscription, History, Portfolio
 from business.serializers import (CreateOrderSerializer, CurrencySerializer,
-                                  OrderSerializer, UpdateOrderSerializer, PortfolioSerializer, AddToPortfolioSerializer,
-                                  HistorySerializer)
+                                  OrderSerializer, UpdateOrderSerializer, SubscriptionSerializer, SubscribeSerializer,
+                                  HistorySerializer, PortfolioSerializer)
+from business.tasks import check_orders
 from user.models import User
 from user.permissions import IsAnalyst, IsAnAuthor
+
+
+def get_queryset_if_not_a_stuff(some_object, user):
+    if user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
+        queryset = some_object.objects.filter(user=user)
+    else:
+        queryset = some_object.objects.all()
+
+    return queryset
 
 
 class CurrencyViewSet(ModelViewSet):
@@ -121,53 +131,37 @@ class OrderViewSet(viewsets.GenericViewSet,
         except Http404:
             return Response([], status=status.HTTP_200_OK)
 
+        check_orders()
+
         serializers = self.get_serializer_class()(orders, many=True)
         return Response(serializers.data, status=status.HTTP_200_OK)
 
 
-class PortfolioViewSet(viewsets.GenericViewSet,
-                       mixins.ListModelMixin,
-                       mixins.CreateModelMixin,
-                       mixins.DestroyModelMixin):
-    queryset = Portfolio.objects.all()
-    default_serializer_class = PortfolioSerializer
-    default_permission_classes = [IsAdminUser, ]
+class SubscriptionViewSet(viewsets.GenericViewSet,
+                          mixins.ListModelMixin,
+                          mixins.CreateModelMixin,
+                          mixins.DestroyModelMixin):
+    queryset = Subscription.objects.all()
+    default_serializer_class = SubscriptionSerializer
+    default_permission_classes = [IsAuthenticated, ]
 
     permission_classes = {
-        'list': [IsAuthenticated, ],
-        'create': [IsAuthenticated, ],
         'destroy': [IsAnAuthor | IsAdminUser],
     }
     serializer_classes = {
-        'list': PortfolioSerializer,
-        'create': AddToPortfolioSerializer,
-        'destroy': PortfolioSerializer,
+        'create': SubscribeSerializer,
     }
 
     def get_serializer_class(self):
-        """Determine the serializer class based on the action being performed.
-
-        Returns:
-           Serializer: The serializer class for the current action.
-        """
         return self.serializer_classes.get(self.action, self.default_serializer_class)
 
     def get_permissions(self):
-        """Get the appropriate permissions for the current action.
-
-        Returns:
-            list: The list of permission classes for the current action.
-
-        """
         return [permission() for permission in
                 self.permission_classes.get(self.action, self.default_permission_classes)]
 
     def list(self, request, *args, **kwargs):
         super().list(request, *args, **kwargs)
-        if request.user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
-            queryset = Portfolio.objects.filter(user=request.user)
-        else:
-            queryset = Portfolio.objects.all()
+        queryset = get_queryset_if_not_a_stuff(Subscription, request.user)
 
         serializer = self.get_serializer_class()(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -181,10 +175,21 @@ class HistoryViewSet(viewsets.GenericViewSet,
 
     def list(self, request, *args, **kwargs):
         super().list(request, *args, **kwargs)
-        if request.user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
-            queryset = History.objects.filter(user=request.user).order_by('user')
-        else:
-            queryset = History.objects.all()
+        queryset = get_queryset_if_not_a_stuff(History, request.user)
 
         serializer = HistorySerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PortfolioViewSet(viewsets.GenericViewSet,
+                       mixins.ListModelMixin):
+    queryset = Portfolio.objects.all()
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = PortfolioSerializer
+
+    def list(self, request, *args, **kwargs):
+        super().list(request, *args, **kwargs)
+        queryset = Portfolio.objects.filter(user=request.user)
+
+        serializer = PortfolioSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

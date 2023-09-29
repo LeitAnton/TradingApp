@@ -165,9 +165,15 @@ class History(models.Model):
                 f"| Action: {self.action}")
 
 
-class Portfolio(models.Model):
+class Subscription(models.Model):
     user = models.ForeignKey(User, models.CASCADE)
-    currency = models.ForeignKey(Currency, models.CASCADE, related_name='currencies')
+    currency = models.ForeignKey(Currency, models.CASCADE, related_name='subscriptions')
 
     def __str__(self):
         return f'User: {self.user.username} -- Currency: {self.currency}'
+
+
+class Portfolio(models.Model):
+    user = models.ForeignKey(User, models.CASCADE)
+    currency = models.ForeignKey(Currency, models.CASCADE)
+    quantity = models.FloatField(default=0.0)
