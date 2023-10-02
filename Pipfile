@@ -19,6 +19,9 @@ django-celery-results = "2.5.1"
 celery = {extras = ["redis"], version = "5.3.4"}
 flower = "2.0.1"
 django-celery-beat = "*"
+django-dynamic-fixture = "*"
+requests = "*"
+pytest-django = "*"
 
 [dev-packages]
 
