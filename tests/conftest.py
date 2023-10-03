@@ -1,6 +1,7 @@
 import pytest
 from rest_framework.test import APIClient
 
+from business.models import Currency, Order
 from user.models import User
 from ddf import G
 
@@ -10,7 +11,7 @@ def client():
     return APIClient()
 
 
-@pytest.fixture 
+@pytest.fixture
 def user():
     username = 'user1'
     password = 'qwerqwer'
@@ -62,3 +63,17 @@ def admin():
     admin.save()
 
     return admin
+
+
+@pytest.fixture
+def currency():
+    currency = G(Currency)
+    currency.save()
+    return currency
+
+
+@pytest.fixture
+def order():
+    order = G(Order)
+    order.save()
+    return order
