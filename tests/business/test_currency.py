@@ -32,9 +32,8 @@ class TestCurrencyViewSet:
         headers = self.take_headers(user.token)
 
         response = client.get(url, headers=headers)
-        data = response.data
 
-        assert len(currency_list) == len(data)
+        assert len(currency_list) == len(response.data)
         assert response.status_code == 200
 
     @pytest.mark.django_db
@@ -51,13 +50,12 @@ class TestCurrencyViewSet:
         headers = self.take_headers(admin.token)
 
         response = client.post(url, headers=headers, data=currency_payload)
-        data = response.data
 
         assert response.status_code == 201
-        assert data['title'] == currency_payload['title']
-        assert data['symbol'] == currency_payload['symbol']
-        assert data['quantity'] == currency_payload['quantity']
-        assert data['price_per_quantity'] == currency_payload['price_per_quantity']
+        assert response.data['title'] == currency_payload['title']
+        assert response.data['symbol'] == currency_payload['symbol']
+        assert response.data['quantity'] == currency_payload['quantity']
+        assert response.data['price_per_quantity'] == currency_payload['price_per_quantity']
 
     @pytest.mark.django_db
     def test_create_permission_denied(self, client, user, currency_payload, url):
@@ -95,13 +93,12 @@ class TestCurrencyViewSet:
         headers = self.take_headers(user.token)
 
         response = client.get(url + f'{currency.id}/', headers=headers)
-        data = response.data
 
         assert response.status_code == 200
-        assert data['title'] == currency.title
-        assert data['symbol'] == currency.symbol
-        assert data['quantity'] == currency.quantity
-        assert data['price_per_quantity'] == currency.price_per_quantity
+        assert response.data['title'] == currency.title
+        assert response.data['symbol'] == currency.symbol
+        assert response.data['quantity'] == currency.quantity
+        assert response.data['price_per_quantity'] == currency.price_per_quantity
 
     @pytest.mark.django_db
     def test_retrieve_permission_denied(self, client, currency, url):
@@ -117,13 +114,12 @@ class TestCurrencyViewSet:
         headers = self.take_headers(admin.token)
 
         response = client.put(url + f'{currency.id}/', headers=headers, data=currency_payload)
-        data = response.data
 
         assert response.status_code == 200
-        assert data['title'] == currency_payload['title']
-        assert data['symbol'] == currency_payload['symbol']
-        assert data['quantity'] == currency_payload['quantity']
-        assert data['price_per_quantity'] == currency_payload['price_per_quantity']
+        assert response.data['title'] == currency_payload['title']
+        assert response.data['symbol'] == currency_payload['symbol']
+        assert response.data['quantity'] == currency_payload['quantity']
+        assert response.data['price_per_quantity'] == currency_payload['price_per_quantity']
 
     @pytest.mark.django_db
     def test_put_not_full_update(self, client, admin, currency, url):
@@ -148,11 +144,10 @@ class TestCurrencyViewSet:
         symbol = 'XXX'
 
         response = client.patch(url + f'{currency.id}/', headers=headers, data={'symbol': symbol})
-        data = response.data
 
         assert response.status_code == 200
-        assert data['symbol'] == symbol
-        assert data['title'] == currency.title
+        assert response.data['symbol'] == symbol
+        assert response.data['title'] == currency.title
 
     @pytest.mark.django_db
     def test_patch_permission_denied(self, client, user, currency, url):
