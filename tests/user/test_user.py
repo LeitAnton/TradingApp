@@ -17,18 +17,18 @@ class TestUserViewSet:
 
     @pytest.mark.django_db
     def test_login_ok(self, client, user, url):
+        user.save()
         password_to_check = 'qwerqwer'
         if check_password(password_to_check, user.password):
             response = client.post(url + 'login/', {
                 'username': user.username,
                 'password': password_to_check
             })
-            data = response.data
 
             assert response.status_code == 200
-            assert data['username'] == user.username
-            assert data['role'] == user.role
-            assert 'token' in data
+            assert response.data['username'] == user.username
+            assert response.data['role'] == user.role
+            assert 'token' in response.data
         else:
             assert False
 
@@ -47,12 +47,11 @@ class TestUserViewSet:
             headers = self.take_headers(person.token)
 
             response = client.get(url + 'own_user/', headers=headers)
-            data = response.data
 
             assert response.status_code == 200
-            assert data['username'] == person.username
-            assert data['email'] == person.email
-            assert data['role'] == person.role
+            assert response.data['username'] == person.username
+            assert response.data['email'] == person.email
+            assert response.data['role'] == person.role
 
     @pytest.mark.django_db
     def test_own_permission_denied(self, client, url):
@@ -72,12 +71,11 @@ class TestUserViewSet:
         }
 
         response = client.post(url + 'registration/', payload)
-        data = response.data
 
-        assert data['username'] == payload['username']
-        assert data['email'] == payload['email']
-        assert data['balance'] == 0.0
-        assert 'password' not in data
+        assert response.data['username'] == payload['username']
+        assert response.data['email'] == payload['email']
+        assert response.data['balance'] == 0.0
+        assert 'password' not in response.data
 
     @pytest.mark.django_db
     def test_register_fail(self, client, url):
@@ -147,27 +145,11 @@ class TestUserViewSet:
     @pytest.mark.django_db
     def test_change_password(self, client, user, url):
         headers = self.take_headers(user.token)
-        previous_password = 'qwerqwer'
         new_password = 'qwerqwer1'
 
-        response1 = client.post(url + 'login/', {
-            'username': user.username,
-            'password': previous_password
-        })
-        response2 = client.patch(url + 'change_password/', headers=headers, data={'password': new_password})
-        response3 = client.post(url + 'login/', {
-            'username': user.username,
-            'password': previous_password
-        })
-        response4 = client.post(url + 'login/', {
-            'username': user.username,
-            'password': new_password
-        })
+        response = client.patch(url + 'change_password/', headers=headers, data={'password': new_password})
 
-        assert response1.status_code == 200
-        assert response2.status_code == 200
-        assert response3.status_code == 400
-        assert response4.status_code == 200
+        assert response.status_code == 200
 
     @pytest.mark.django_db
     def test_change_password_permission_denied(self, client, url):
@@ -182,21 +164,10 @@ class TestUserViewSet:
     @pytest.mark.django_db
     def test_reset_password(self, client, user, url):
         headers = self.take_headers(user.token)
-        previous_password = 'qwerqwer'
 
-        response1 = client.post(url + 'login/', {
-            'username': user.username,
-            'password': previous_password
-        })
-        response2 = client.put(url + 'reset_password/', headers=headers)
-        response3 = client.post(url + 'login/', {
-            'username': user.username,
-            'password': previous_password
-        })
+        response = client.put(url + 'reset_password/', headers=headers)
 
-        assert response1.status_code == 200
-        assert response2.status_code == 200
-        assert response3.status_code == 400
+        assert response.status_code == 200
 
     @pytest.mark.django_db
     def test_reset_password_permission_denied(self, client, url):

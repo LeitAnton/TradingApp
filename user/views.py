@@ -11,6 +11,7 @@ from user.serializers import (ChangePasswordSerializer, LoginSerializer,
                               UserSerializer)
 from user.tasks import send_mail_about_reset_password
 
+
 class UserViewSet(viewsets.GenericViewSet,
                   mixins.ListModelMixin):
     """ModelViewSet for class User.

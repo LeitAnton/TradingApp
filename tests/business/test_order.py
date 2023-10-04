@@ -7,13 +7,11 @@ from business.models import Order
 
 class TestOrderViewSet:
     def take_headers(self, token):
-        headers = {'Authorization': f'Bearer {token}'}
-        return headers
+        return {'Authorization': f'Bearer {token}'}
 
     @pytest.fixture
     def url(self):
-        url = '/api/business/order/'
-        return url
+        return '/api/business/order/'
 
     @pytest.fixture
     def order_payload(self, user, currency):
@@ -31,25 +29,15 @@ class TestOrderViewSet:
 
     @pytest.fixture
     def order_admin_list(self, admin):
-        order1 = G(Order, user=admin)
-        order2 = G(Order, user=admin)
-        order1.save()
-        order2.save()
-        return order1, order2
+        return G(Order, user=admin, n=2)
 
     @pytest.fixture
     def order_user_list(self, user):
-        order1 = G(Order, user=user)
-        order2 = G(Order, user=user)
-        order1.save()
-        order2.save()
-        return order1, order2
+        return G(Order, user=user, n=2)
 
     @pytest.fixture
     def user_s_order(self, user):
-        order = G(Order, user=user)
-        order.save()
-        return order
+        return G(Order, user=user)
 
     @pytest.mark.django_db
     def test_list_ok(self, client, user, admin, analyst, order_admin_list, order_user_list, url):
@@ -57,8 +45,7 @@ class TestOrderViewSet:
             headers = self.take_headers(person.token)
 
             response = client.get(url, headers=headers)
-            data = response.data
-            pk_list = [order['pk'] for order in data]
+            pk_list = [order['pk'] for order in response.data]
 
             assert response.status_code == 200
             assert all(order.id in pk_list for order in order_user_list)
@@ -81,17 +68,16 @@ class TestOrderViewSet:
         headers = self.take_headers(user.token)
 
         response = client.post(url, headers=headers, data=order_payload)
-        data = response.data
 
         assert response.status_code == 201
-        assert data['user'] == user.username
-        assert data['currency'] == order_payload['currency']
-        assert data['price'] == order_payload['price']
-        assert data['action'] == order_payload['action']
-        assert data['quantity'] == order_payload['quantity']
-        assert data['order_type'] == order_payload['order_type']
-        assert data['create_by_price_or_quantity'] == order_payload['create_by_price_or_quantity']
-        assert data['match_price_per_currency_quantity'] == order_payload['match_price_per_currency_quantity']
+        assert response.data['user'] == user.username
+        assert response.data['currency'] == order_payload['currency']
+        assert response.data['price'] == order_payload['price']
+        assert response.data['action'] == order_payload['action']
+        assert response.data['quantity'] == order_payload['quantity']
+        assert response.data['order_type'] == order_payload['order_type']
+        assert response.data['create_by_price_or_quantity'] == order_payload['create_by_price_or_quantity']
+        assert response.data['match_price_per_currency_quantity'] == order_payload['match_price_per_currency_quantity']
 
     @pytest.mark.django_db
     def test_create_permission_denied(self, client, user, order_payload, url):
@@ -115,13 +101,12 @@ class TestOrderViewSet:
         headers = self.take_headers(user.token)
 
         response = client.get(url + f'{user_s_order.id}/', headers=headers)
-        data = response.data
 
         assert response.status_code == 200
-        assert data['user'] == user.id
-        assert data['currency'] == user_s_order.currency.id
-        assert data['price'] == user_s_order.price
-        assert data['quantity'] == user_s_order.quantity
+        assert response.data['user'] == user.id
+        assert response.data['currency'] == user_s_order.currency.id
+        assert response.data['price'] == user_s_order.price
+        assert response.data['quantity'] == user_s_order.quantity
 
     @pytest.mark.django_db
     def test_retrieve_order_by_not_author(self, client, user, order, url):
@@ -137,13 +122,12 @@ class TestOrderViewSet:
             headers = self.take_headers(person.token)
 
             response = client.get(url + f'{order.id}/', headers=headers)
-            data = response.data
 
             assert response.status_code == 200
-            assert data['user'] != person.id
-            assert data['currency'] == order.currency.id
-            assert data['price'] == order.price
-            assert data['quantity'] == order.quantity
+            assert response.data['user'] != person.id
+            assert response.data['currency'] == order.currency.id
+            assert response.data['price'] == order.price
+            assert response.data['quantity'] == order.quantity
 
     @pytest.mark.django_db
     def test_retrieve_permission_denied(self, client, order, url):
@@ -160,14 +144,13 @@ class TestOrderViewSet:
             headers = self.take_headers(person.token)
 
             response = client.put(url + f'{user_s_order.id}/', headers=headers, data=order_payload)
-            data = response.data
 
             assert response.status_code == 200
-            assert data['user'] == person.id
-            assert data['currency'] == order_payload['currency']
-            assert data['price'] == order_payload['price']
-            assert data['action'] == order_payload['action']
-            assert data['quantity'] == order_payload['quantity']
+            assert response.data['user'] == person.id
+            assert response.data['currency'] == order_payload['currency']
+            assert response.data['price'] == order_payload['price']
+            assert response.data['action'] == order_payload['action']
+            assert response.data['quantity'] == order_payload['quantity']
 
     @pytest.mark.django_db
     def test_put_order_by_not_author(self, client, user, order, order_payload, url):
@@ -201,12 +184,11 @@ class TestOrderViewSet:
         action = 'S'
 
         response = client.patch(url + f'{order.id}/', headers=headers, data={'action': action})
-        data = response.data
 
         assert response.status_code == 200
-        assert data['user'] == order.user.id
-        assert data['user'] != admin.id
-        assert data['action'] == action
+        assert response.data['user'] == order.user.id
+        assert response.data['user'] != admin.id
+        assert response.data['action'] == action
 
     @pytest.mark.django_db
     def test_patch_permission_denied(self, client, user, order, url):

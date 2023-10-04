@@ -19,7 +19,6 @@ def user():
 
     user = G(User, username=username, email=email)
     user.set_password(password)
-    user.save()
 
     return user
 
@@ -32,7 +31,6 @@ def not_active_user():
 
     user = G(User, username=username, email=email, is_active=False)
     user.set_password(password)
-    user.save()
 
     return user
 
@@ -46,7 +44,6 @@ def analyst():
 
     analyst = G(User, username=username, email=email, role=role)
     analyst.set_password(password)
-    analyst.save()
 
     return analyst
 
@@ -60,20 +57,15 @@ def admin():
 
     admin = G(User, is_superuser=True, username=username, email=email, role=role, is_staff=True)
     admin.set_password(password)
-    admin.save()
 
     return admin
 
 
 @pytest.fixture
 def currency():
-    currency = G(Currency)
-    currency.save()
-    return currency
+    return G(Currency)
 
 
 @pytest.fixture
 def order():
-    order = G(Order)
-    order.save()
-    return order
+    return G(Order)

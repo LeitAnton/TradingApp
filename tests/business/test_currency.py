@@ -7,13 +7,11 @@ from business.models import Currency
 
 class TestCurrencyViewSet:
     def take_headers(self, token):
-        headers = {'Authorization': f'Bearer {token}'}
-        return headers
+        return {'Authorization': f'Bearer {token}'}
 
     @pytest.fixture
     def url(self):
-        url = '/api/business/currency/'
-        return url
+        return '/api/business/currency/'
 
     @pytest.fixture
     def currency_payload(self):
@@ -27,11 +25,7 @@ class TestCurrencyViewSet:
 
     @pytest.fixture
     def currency_list(self):
-        currency1 = G(Currency)
-        currency2 = G(Currency)
-        currency1.save()
-        currency2.save()
-        return [currency1, currency2]
+        return G(Currency, n=2)
 
     @pytest.mark.django_db
     def test_list_ok(self, client, user, currency_list, url):
