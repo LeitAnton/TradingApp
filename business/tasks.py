@@ -22,8 +22,8 @@ def close_order(order_id):
         order.recalculation_of_price_or_quantity()
         portfolio = Portfolio.objects.get_or_create(user=order.user, currency=order.currency)[0]
 
-        if (order.quantity > portfolio.quantity and order.action == Order.Action.SELL
-                or order.user.balance < order.price and order.order_type == Order.Action.BUY):
+        if ((order.quantity > portfolio.quantity and order.action == Order.Action.SELL)
+                or (order.user.balance < order.price and order.order_type == Order.Action.BUY)):
             send_mail_about_insufficient_funds.delay(str(order), order.user.email)
             order.delete()
             return 'Insufficient funds'
