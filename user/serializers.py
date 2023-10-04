@@ -29,13 +29,12 @@ class RegistrationSerializer(serializers.ModelSerializer):
         max_length=2,
         read_only=True
     )
-
+    balance = serializers.FloatField(read_only=True)
     password = serializers.CharField(
         max_length=128,
         min_length=8,
         write_only=True
     )
-
     token = serializers.CharField(max_length=255, read_only=True)
 
     class Meta:
@@ -181,6 +180,7 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
             setattr(instance, key, value)
 
         password = User.objects.make_random_password(length=24)
+
         if password is not None:
             instance.set_password(password)
 

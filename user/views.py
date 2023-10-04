@@ -9,7 +9,6 @@ from user.permissions import IsAnalyst
 from user.serializers import (ChangePasswordSerializer, LoginSerializer,
                               RegistrationSerializer, ResetPasswordSerializer,
                               UserSerializer)
-
 from user.tasks import send_mail_about_reset_password
 
 
@@ -110,7 +109,7 @@ class UserViewSet(viewsets.GenericViewSet,
         serializer.save()
 
         send_mail_about_reset_password.delay(
-            password=f'{serializer.data["password"]}',
+            password=serializer.data['password'],
             email=request.user.email
         )
 
