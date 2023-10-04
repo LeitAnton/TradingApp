@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from business.models import Currency, Order, History
+from business.models import Currency, Order, History, Subscription, Portfolio
 
 
 class CurrencyAdmin(admin.ModelAdmin):
@@ -58,6 +58,14 @@ class HistoryAdmin(admin.ModelAdmin):
     list_filter = ('action', 'currency')
 
 
+class PortfolioAdmin(admin.ModelAdmin):
+    model = Portfolio
+    fields = ('user', 'currency', 'quantity')
+    readonly_fields = ('user', 'currency', 'quantity')
+
+
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(History, HistoryAdmin)
+admin.site.register(Subscription)
+admin.site.register(Portfolio, PortfolioAdmin)

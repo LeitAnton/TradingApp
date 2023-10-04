@@ -23,8 +23,8 @@ ENV USER=TradingApp \
     PYTHONFONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-RUN mkdir -p /home/$USER
-RUN addgroup -S $USER && adduser -S $USER -G $USER
+RUN mkdir -p /home/$USER  \
+    && addgroup -S $USER && adduser -S $USER -G $USER
 
 ENV HOME=/home/$USER
 ENV APP_HOME=/home/$USER/web
@@ -40,6 +40,6 @@ COPY . $APP_HOME
 RUN chown -R $USER:$USER $APP_HOME
 USER $USER
 
-RUN chmod +x $APP_HOME/web-entrypoint.sh
-RUN chmod +x $APP_HOME/worker-entrypoint.sh
-RUN chmod +x $APP_HOME/celery-beat-entrypoint.sh
+RUN chmod +x $APP_HOME/web-entrypoint.sh  \
+    && chmod +x $APP_HOME/worker-entrypoint.sh  \
+    && chmod +x $APP_HOME/celery-beat-entrypoint.sh
