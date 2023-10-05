@@ -14,6 +14,6 @@ app.autodiscover_tasks()
 CELERY_BEAT_SCHEDULE = {
     'check_orders': {
         'task': 'business.tasks.check_orders',
-        'schedule': crontab(minute="*/10"),
+        'schedule': crontab(minute="*/1"),
     },
 }

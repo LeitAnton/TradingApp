@@ -23,5 +23,4 @@ class UserAdmin(admin.ModelAdmin):
     list_editable = ('role',)
 
 
-# Register the User model with the custom admin configuration
 admin.site.register(User, UserAdmin)

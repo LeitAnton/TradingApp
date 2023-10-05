@@ -6,11 +6,7 @@ from business.models import Currency, Order, Subscription, History, Portfolio
 
 
 class CurrencySerializer(serializers.ModelSerializer):
-    """Serializer for the Currency model.
-
-    This serializer is used to serialize Currency objects.
-
-    """
+    """Serializer for the Currency model. """
 
     class Meta:
         model = Currency
@@ -18,11 +14,7 @@ class CurrencySerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """Serializer for the Order model.
-
-    This serializer is used to serialize Order objects.
-
-    """
+    """Serializer for the Order model. """
 
     class Meta:
         model = Order
@@ -39,49 +31,13 @@ class OrderSerializer(serializers.ModelSerializer):
         )
 
 
-class CreateOrderSerializer(serializers.ModelSerializer):
-    """Serializer for creating Order instances.
-
-    This serializer is used for creating Order objects, including validation and processing of data.
-
-    Attributes:
-        user (CharField): The user creating the order (read-only).
-        price (FloatField): The price for the order.
-        quantity (FloatField): The quantity for the order.
-        match_price_per_currency_quantity (FloatField): The match price per currency quantity.
-
-    """
-
+class CreateOrderSerializer(OrderSerializer):
+    """Serializer for creating Order instances. """
+    pk = serializers.IntegerField(read_only=True)
     user = serializers.CharField(allow_null=True, read_only=True)
-    price = serializers.FloatField(allow_null=True)
-    quantity = serializers.FloatField(allow_null=True)
-    match_price_per_currency_quantity = serializers.FloatField(allow_null=True)
-
-    class Meta:
-        model = Order
-        fields = (
-            'pk',
-            'user',
-            'currency',
-            'order_type',
-            'create_by_price_or_quantity',
-            'action',
-            'quantity',
-            'price',
-            'match_price_per_currency_quantity',
-        )
-        read_only = ('user',)
 
     def create(self, validated_data):
-        """Create a new Order instance.
-
-        Args:
-            validated_data (dict): The validated data for order creation.
-
-        Returns:
-            Order: The newly created Order instance.
-
-        """
+        """Create a new Order instance. """
 
         user = self.context['request'].user
         validated_data['user'] = user
@@ -91,39 +47,13 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         return Order.objects.create(**data)
 
 
-class UpdateOrderSerializer(serializers.ModelSerializer):
-    """Serializer for updating Order instances.
-
-    This serializer is used for updating existing Order objects, including validation and processing of data.
-
-    """
-
-    class Meta:
-        model = Order
-        fields = (
-            'pk',
-            'user',
-            'currency',
-            'order_type',
-            'create_by_price_or_quantity',
-            'action',
-            'quantity',
-            'price',
-            'match_price_per_currency_quantity',
-        )
-        read_only = ('user',)
+class UpdateOrderSerializer(OrderSerializer):
+    """Serializer for updating Order instances. """
+    pk = serializers.IntegerField(read_only=True)
+    user = serializers.CharField(allow_null=True, read_only=True)
 
     def update(self, instance, validated_data):
-        """Update an existing Order instance.
-
-        Args:
-            instance (Order): The existing Order instance to update.
-            validated_data (dict): The validated data for order update.
-
-        Returns:
-            Order: The updated Order instance.
-
-        """
+        """Update an existing Order instance. """
 
         user = self.context['request'].user
         validated_data['user'] = user
@@ -146,11 +76,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         validated_data['user'] = user
-        portfolio = Subscription.objects.filter(user=validated_data['user'], currency=validated_data['currency'])
-        if not portfolio:
+        subscription = Subscription.objects.filter(user=validated_data['user'], currency=validated_data['currency'])
+        if not subscription:
             return Subscription.objects.create(**validated_data)
 
-        raise IntegrityError('This currency is already exist in your portfolio. ')
+        raise IntegrityError('You are already subscribed to this currency. ')
 
 
 class HistorySerializer(serializers.ModelSerializer):

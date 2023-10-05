@@ -1,6 +1,9 @@
-from django.db import models
+from django.db import models, transaction
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from user.models import User
+from business.tasks import close_order
 
 
 class Currency(models.Model):
@@ -121,15 +124,21 @@ class Order(models.Model):
             bool: True if the match conditions are met, False otherwise.
 
         """
-        if (self.match_price_per_currency_quantity >= self.currency.price_per_quantity
+        if (self.match_price_per_currency_quantity <= self.currency.price_per_quantity
                 and self.action == self.Action.SELL):
             return True
 
-        if (self.match_price_per_currency_quantity <= self.currency.price_per_quantity
+        if (self.match_price_per_currency_quantity >= self.currency.price_per_quantity
                 and self.action == self.Action.BUY):
             return True
 
         return False
+
+
+@receiver(post_save, sender=Order)
+def close_manual_order(sender, instance, **kwargs):
+    if instance.order_type == Order.OrderType.MANUAL:
+        close_order.delay(instance.id)
 
 
 class History(models.Model):
@@ -174,7 +183,7 @@ class Subscription(models.Model):
 
 
 class Portfolio(models.Model):
-    user = models.ForeignKey(User, models.CASCADE)
+    user = models.ForeignKey(User, models.CASCADE, related_name='portfolios')
     currency = models.ForeignKey(Currency, models.CASCADE)
     quantity = models.FloatField(default=0.0)
 

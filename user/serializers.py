@@ -1,56 +1,35 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
+from business.serializers import PortfolioSerializer
 from user.models import User
+from user.tasks import send_mail_about_reset_password
 
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for the User model.
-
-    Serializes user information, including primary key, role, and username.
-
-    """
+    """Serializer for the User model. """
 
     class Meta:
         model = User
-        fields = ('pk', 'username', 'email', 'balance', 'role', 'balance')
+        fields = ('pk', 'username', 'email', 'role', 'balance')
+        read_only_fields = ('pk', 'role', 'balance')
 
 
-class RegistrationSerializer(serializers.ModelSerializer):
-    """Serializer for user registration.
+class RegistrationSerializer(UserSerializer):
+    """Serializer for user registration. """
 
-    Serializes user registration data, including username, role, password, and token.
-    Also handles user creation.
-
-    """
-
-    role = serializers.CharField(
-        min_length=2,
-        max_length=2,
-        read_only=True
-    )
-    balance = serializers.FloatField(read_only=True)
     password = serializers.CharField(
         max_length=128,
         min_length=8,
         write_only=True
     )
-    token = serializers.CharField(max_length=255, read_only=True)
 
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'role', 'password', 'token', 'balance']
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ('password', 'token')
+        read_only_fields = UserSerializer.Meta.read_only_fields + ('token',)
 
     def create(self, validated_data):
-        """Create a new user based on validated data.
-
-        Args:
-            validated_data (dict): Validated data for user creation.
-
-        Returns:
-            User: The newly created user object.
-
-        """
+        """Create a new user based on validated data. """
         return User.objects.create_user(**validated_data)
 
 
@@ -68,19 +47,7 @@ class LoginSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=255, read_only=True)
 
     def validate(self, data):
-        """Validate user login data and perform authentication.
-
-        Args:
-            data (dict): User login data to validate.
-
-        Returns:
-            dict: Validated user login data including username, role, and token.
-
-        Raises:
-            serializers.ValidationError: If validation fails, including missing email or password,
-            or if authentication fails.
-
-        """
+        """Validate user login data and perform authentication. """
         username = data.get('username', None)
         password = data.get('password', None)
 
@@ -109,13 +76,8 @@ class LoginSerializer(serializers.Serializer):
         }
 
 
-class ChangePasswordSerializer(serializers.ModelSerializer):
-    """Serializer for changing user passwords.
-
-    Serializes data for changing user passwords, including the new password.
-    Handles updating the user's password.
-
-    """
+class ChangePasswordSerializer(UserSerializer):
+    """Serializer for changing user passwords. """
 
     password = serializers.CharField(
         max_length=128,
@@ -123,25 +85,13 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
         write_only=True
     )
 
-    class Meta:
-        model = User
-        fields = ('role', 'username', 'password',)
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ('password',)
+        read_only_fields = UserSerializer.Meta.fields
 
     def update(self, instance, validated_data):
-        """Update the user's password and any other provided fields.
-
-        Args:
-            instance (User): The user instance to update.
-            validated_data (dict): Validated data containing the new password.
-
-        Returns:
-            User: The updated user object.
-
-        """
+        """Update the user's password and any other provided fields. """
         password = validated_data.pop('password', None)
-
-        for key, value in validated_data.items():
-            setattr(instance, key, value)
 
         if password is not None:
             instance.set_password(password)
@@ -152,33 +102,14 @@ class ChangePasswordSerializer(serializers.ModelSerializer):
 
 
 class ResetPasswordSerializer(serializers.ModelSerializer):
-    """Serializer for resetting user passwords.
+    """Serializer for resetting user passwords. """
 
-    Serializes data for resetting user passwords, including generating a random password.
-    Handles updating the user's password.
-
-    """
-
-    class Meta:
-        model = User
-        fields = ('role', 'username', 'password',)
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields
+        read_only_fields = UserSerializer.Meta.read_only_fields + ('username', 'email',)
 
     def update(self, instance, validated_data):
-        """Reset the user's password to a random value.
-
-        Args:
-            instance (User): The user instance to update.
-            validated_data (dict): Validated data (not used for resetting password).
-
-        Returns:
-            User: The updated user object.
-
-        """
-        validated_data.pop('password', None)
-
-        for key, value in validated_data.items():
-            setattr(instance, key, value)
-
+        """Reset the user's password to a random value. """
         password = User.objects.make_random_password(length=24)
 
         if password is not None:
@@ -186,4 +117,32 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
         instance.save()
 
+        send_mail_about_reset_password.delay(
+            password=password,
+            email=instance.email
+        )
+
+        return instance
+
+
+class OwnUserSerializer(UserSerializer):
+    """Serializer for the User model. """
+    portfolios = PortfolioSerializer(many=True, read_only=True)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ('portfolios', )
+        read_only_fields = fields
+
+
+class AddBalanceToUserSerializer(serializers.ModelSerializer):
+    """Serializer for the User model. """
+    amount = serializers.FloatField(write_only=True)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + ('amount', )
+
+    def update(self, instance, validated_data):
+        amount = validated_data.pop('amount', 0)
+        instance.balance += amount
+        instance.save()
         return instance

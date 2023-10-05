@@ -16,5 +16,6 @@ fi
 echo "Ok"
 
 python3 manage.py migrate
+# python3 manage.py create_models
 
 exec "$@"
