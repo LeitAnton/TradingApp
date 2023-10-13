@@ -1,4 +1,5 @@
 from celery import shared_task
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.db import transaction
 from rest_framework.generics import get_object_or_404
@@ -9,9 +10,12 @@ from TradingApp.celery import app
 @shared_task
 def check_orders():
     from business.models import Order
-    orders = Order.objects.all()
-    for order in orders:
-        close_order.delay(order.pk)
+    try:
+        orders = Order.objects.all()
+        for order in orders:
+            close_order.delay(order.pk)
+    except ObjectDoesNotExist:
+        return 'No orders found'
 
 
 @app.task

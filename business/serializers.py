@@ -41,10 +41,10 @@ class CreateOrderSerializer(OrderSerializer):
 
         user = self.context['request'].user
         validated_data['user'] = user
-        data = business.utils.check_create_by_price_or_quantity(validated_data)
-        data = business.utils.check_order_type(data)
+        data_after_check_create_by_price_or_quantity = business.utils.check_create_by_price_or_quantity(validated_data)
+        data_after_check_order_type = business.utils.check_order_type(data_after_check_create_by_price_or_quantity)
 
-        return Order.objects.create(**data)
+        return Order.objects.create(**data_after_check_order_type)
 
 
 class UpdateOrderSerializer(OrderSerializer):
