@@ -1,3 +1,4 @@
+from django.shortcuts import get_list_or_404
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -5,15 +6,15 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from user.models import User
-from user.permissions import IsAnalyst
 from user.serializers import (ChangePasswordSerializer, LoginSerializer,
                               RegistrationSerializer, ResetPasswordSerializer,
-                              UserSerializer)
-from user.tasks import send_mail_about_reset_password
+                              UserSerializer, OwnUserSerializer, AddBalanceToUserSerializer)
+from user.permissions import IsAnAuthor
 
 
 class UserViewSet(viewsets.GenericViewSet,
-                  mixins.ListModelMixin):
+                  mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin):
     """ModelViewSet for class User.
 
     This viewset provides CRUD operations for User objects and additional actions like changing
@@ -32,21 +33,24 @@ class UserViewSet(viewsets.GenericViewSet,
     default_permission_classes = [AllowAny, ]
 
     serializer_classes = {
-        'own_user': UserSerializer,
+        'list': OwnUserSerializer,
+        'retrieve': OwnUserSerializer,
         'change_password': ChangePasswordSerializer,
         'reset_password': ResetPasswordSerializer,
         'registration': RegistrationSerializer,
         'login': LoginSerializer,
+        'add_balance_to_user': AddBalanceToUserSerializer
     }
 
     permission_classes = {
-        'own_user': [IsAuthenticated, ],
         'change_password': [IsAuthenticated, ],
+        'retrieve': [IsAnAuthor | IsAdminUser ],
         'reset_password': [IsAuthenticated, ],
         'registration': [AllowAny, ],
         'login': [AllowAny, ],
         'block_user': [IsAdminUser, ],
-        'list': [IsAnalyst | IsAdminUser]
+        'list': [IsAuthenticated, ],
+        'add_balance_to_user': [IsAdminUser, ]
     }
 
     def get_serializer_class(self):
@@ -66,18 +70,16 @@ class UserViewSet(viewsets.GenericViewSet,
         return [permission() for permission in
                 self.permission_classes.get(self.action, self.default_permission_classes)]
 
+    def get_queryset(self):
+        if self.action == 'list':
+            if self.request.user.role not in [User.RolesChoices.ADMIN, User.RolesChoices.ANALYST]:
+                return User.objects.filter(pk=self.request.user.id)
+
+        return User.objects.all()
+
     @action(detail=False, methods=['patch'])
     def change_password(self, request, *args, **kwargs):
-        """Change the user's password.
-
-        Args:
-            request (Request): The HTTP request object.
-            *args: Variable-length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Response: A response indicating the success of the password change.
-        """
+        """Change the user's password. """
         serializer_data = request.data
 
         serializer = self.get_serializer_class()(
@@ -85,98 +87,58 @@ class UserViewSet(viewsets.GenericViewSet,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['put'])
-    def reset_password(self, request, *args, **kwargs):
-        """Change the user's password.
-
-        Args:
-            request (Request): The HTTP request object.
-            *args: Variable-length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Response: A response indicating the success of the password change.
-        """
-        serializer_data = request.data
-
-        serializer = self.get_serializer_class()(
-            request.user, data=serializer_data, partial=True
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        send_mail_about_reset_password.delay(
-            password=serializer.data['password'],
-            email=request.user.email
-        )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
-    def own_user(self, request, *args, **kwargs):
-        """Retrieve the user's own information.
+    def reset_password(self, request, *args, **kwargs):
+        """Reset the user's password and send it on the mail. """
+        serializer_data = request.data
 
-        Args:
-            request (Request): The HTTP request object.
-            *args: Variable-length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Response: A response containing the user's information.
-        """
-        user = get_object_or_404(User, pk=request.user.id)
-        serializer = self.get_serializer_class()(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['post'])
-    def registration(self, request):
-        """Register a new user.
-
-        Args:
-            request (Request): The HTTP request object.
-
-        Returns:
-            Response: A response indicating the success of the user registration.
-        """
-        user = request.data
-        serializer = self.get_serializer_class()(data=user)
+        serializer = self.get_serializer_class()(
+            request.user, data=serializer_data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({**serializer.data, 'password': 'Check your email to get new password'},
+                        status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def login(self, request):
-        """Log in a user.
-
-        Args:
-            request (Request): The HTTP request object.
-
-        Returns:
-            Response: A response indicating the success of the user login.
-        """
+        """Log in a user. """
         serializer = self.get_serializer_class()(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['get'])
     def block_user(self, request, *args, **kwargs):
-        """Block a user.
-
-        Args:
-            request (Request): The HTTP request object.
-            *args: Variable-length argument list.
-            **kwargs: Arbitrary keyword arguments.
-
-        Returns:
-            Response: A response indicating that the user has been blocked.
-        """
+        """Block a user. """
         user = get_object_or_404(User, pk=kwargs['pk'])
         user.is_active = False
         user.save()
 
         return Response({'detail': 'User is block'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def add_balance_to_user(self, request, *args, **kwargs):
+        """Add amount for user's balance. """
+        user = get_object_or_404(User, pk=self.kwargs['pk'])
+        serializer = self.get_serializer_class()(
+            user, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def registration(self, request, *args, **kwargs):
+        """Register a new user. """
+        user = request.data
+        serializer = self.get_serializer_class()(data=user)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -46,12 +46,14 @@ class OrderViewSet(viewsets.GenericViewSet,
         'list': [IsAuthenticated, ],
         'create': [IsAuthenticated, ],
         'update': [IsAnAuthor | IsAdminUser],
+        'partial_update': [IsAnAuthor | IsAdminUser],
         'destroy': [IsAnAuthor | IsAdminUser],
         'retrieve': [IsAnAuthor | IsAnalyst | IsAdminUser]
     }
     serializer_classes = {
         'list': OrderSerializer,
         'create': CreateOrderSerializer,
+        'partial_update': UpdateOrderSerializer,
         'update': UpdateOrderSerializer,
     }
 
@@ -93,16 +95,31 @@ class SubscriptionViewSet(viewsets.GenericViewSet,
 
 
 class HistoryViewSet(viewsets.GenericViewSet,
-                     mixins.ListModelMixin):
+                     mixins.ListModelMixin,
+                     mixins.RetrieveModelMixin):
     queryset = History.objects.all()
-    permission_classes = [IsAuthenticated, ]
+    default_permission_classes = [IsAuthenticated, ]
     serializer_class = HistorySerializer
+
+    permission_classes = {
+        'retrieve': [IsAnalyst | IsAdminUser],
+    }
+
+    def get_permissions(self):
+        return [permission() for permission in
+                self.permission_classes.get(self.action, self.default_permission_classes)]
 
     def get_queryset(self):
         if self.action == 'list':
             return get_own_if_not_a_stuff(self.request.user, History)
 
+        if self.action == 'retrieve':
+            return History.objects.filter(user=self.kwargs['pk'])
+
         return History.objects.all()
+
+    def retrieve(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 
 class PortfolioViewSet(viewsets.GenericViewSet,

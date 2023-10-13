@@ -1,5 +1,7 @@
 from rest_framework import permissions
 
+from user.models import User
+
 
 class IsAnalyst(permissions.BasePermission):
     """Permission class for checking if a user is an analyst.
@@ -48,7 +50,12 @@ class IsAnAuthor(permissions.BasePermission):
             bool: True if the user is one of the authors of the object, False otherwise.
 
         """
-        if request.user == obj.user:
+        if isinstance(obj, User):
+            user_id = obj.id
+        else:
+            user_id = obj.user.id
+
+        if request.user.id == user_id:
             return True
 
         return False

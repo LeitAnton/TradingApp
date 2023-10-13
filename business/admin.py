@@ -33,7 +33,6 @@ class OrderAdmin(admin.ModelAdmin):
 
     model = Order
     fields = ('user', 'currency', 'action', 'quantity', 'price', 'match_price_per_currency_quantity')
-    readonly_fields = ('user', 'currency', 'action', 'quantity', 'price', 'match_price_per_currency_quantity')
     search_fields = ('currency',)
     list_filter = ('action', 'currency')
 
