@@ -7,6 +7,18 @@ from rest_framework.generics import get_object_or_404
 from TradingApp.celery import app
 
 
+@app.task
+def run_currencies_updating():
+    from business.consumer import constant_consumer
+    constant_consumer()
+
+
+@app.task
+def send_message_to_kafka_task(topic, message):
+    from business.producer import send_message_to_kafka
+    send_message_to_kafka(topic, message)
+
+
 @shared_task
 def check_orders():
     from business.models import Order
@@ -26,7 +38,6 @@ def close_order(order_id):
     try:
         if order.order_type == Order.OrderType.MANUAL:
             order.match_price_per_currency_quantity = order.currency.price_per_quantity
-            order.save()
 
         if order.check_match_price():
             order.recalculation_of_price_or_quantity()
@@ -82,7 +93,7 @@ def send_mail_about_order_close(order, email):
 
 
 @app.task
-def send_mail_about_transaction_error(order, error, email):
+def send_mail_about_transaction_error(order, email):
     send_mail(
         subject='Order wasn\'t close',
         message=f"""Your order {order} wasn\'t close.

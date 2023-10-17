@@ -1,9 +1,10 @@
-from django.db import models, transaction
-from django.db.models.signals import post_save
+from django.db import models
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
-from user.models import User
 from business.tasks import close_order
+from business.utils import send_action_currency
+from user.models import User
 
 
 class Currency(models.Model):
@@ -20,7 +21,7 @@ class Currency(models.Model):
     """
 
     title = models.CharField(max_length=255, unique=True)
-    symbol = models.CharField(max_length=3, unique=True)
+    symbol = models.CharField(max_length=10, unique=True)
     quantity = models.FloatField()
     price_per_quantity = models.FloatField()
 
@@ -52,6 +53,17 @@ class Currency(models.Model):
         """
         modifier = price / self.price_per_quantity
         return modifier * self.quantity
+
+
+@receiver(post_save, sender=Currency)
+def create_currency(sender, instance, created, **kwargs):
+    if created:
+        send_action_currency('subscribe', instance.symbol)
+
+
+@receiver(post_delete, sender=Currency)
+def delete_currency(sender, instance, **kwargs):
+    send_action_currency('unsubscribe', instance.symbol)
 
 
 class Order(models.Model):

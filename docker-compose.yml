@@ -13,18 +13,24 @@ services:
       - postgres_data:/var/lib/postgresql/data/
     ports:
       - "5432:5432"
+    networks:
+      - mynetwork
 
   redis:
     restart: unless-stopped
     image: redis:7.0.5-alpine
     expose:
       - 6479
+    networks:
+      - mynetwork
 
   mailhog:
     image: mailhog/mailhog
     ports:
       - "1025:1025"
       - "8025:8025"
+    networks:
+      - mynetwork
 
   web:
     restart: unless-stopped
@@ -40,6 +46,8 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    networks:
+      - mynetwork
 
   worker:
     restart: unless-stopped
@@ -53,6 +61,8 @@ services:
       - db
       - redis
       - web
+    networks:
+      - mynetwork
 
   celery-beat:
     restart: unless-stopped
@@ -67,6 +77,8 @@ services:
       - redis
       - web
       - worker
+    networks:
+      - mynetwork
 
   flower:
     restart: unless-stopped
@@ -83,7 +95,13 @@ services:
       - flower_data:/data
     depends_on:
       - worker
+    networks:
+      - mynetwork
 
 volumes:
   postgres_data:
   flower_data:
+
+networks:
+  mynetwork:
+    external: true
