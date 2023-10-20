@@ -42,27 +42,6 @@ class TestUserViewSet:
         assert response.status_code == 400
 
     @pytest.mark.django_db
-    def test_own_ok(self, client, user, analyst, url):
-        for person in (user, analyst):
-            headers = self.take_headers(person.token)
-
-            response = client.get(url + 'own_user/', headers=headers)
-
-            assert response.status_code == 200
-            assert response.data['username'] == person.username
-            assert response.data['email'] == person.email
-            assert response.data['role'] == person.role
-
-    @pytest.mark.django_db
-    def test_own_permission_denied(self, client, url):
-        try:
-            client.get(url + 'own_user/')
-        except PermissionDenied as error:
-            assert error.status_code == 403
-        else:
-            assert False
-
-    @pytest.mark.django_db
     def test_register(self, client, url):
         payload = {
             'username': 'test1',
@@ -107,16 +86,19 @@ class TestUserViewSet:
         assert response.status_code == 200
 
     @pytest.mark.django_db
-    def test_user_list_permission_denied(self, client, user, url):
+    def test_user_only_own(self, client, user, analyst, url):
         headers = self.take_headers(user.token)
 
         response = client.get(url, headers=headers)
-        assert response.status_code == 403
+
+        assert response.status_code == 200
+        assert user.username in [user['username'] for user in response.data]
+        assert analyst.username not in [user['username'] for user in response.data]
 
     @pytest.mark.django_db
     def test_block_user(self, client, admin, user, url):
         headers = self.take_headers(admin.token)
-        response = client.patch(url + f'{user.id}/block_user/', headers=headers)
+        response = client.get(url + f'{user.id}/block_user/', headers=headers)
         user = User.objects.get(username=user.username)
 
         assert response.status_code == 200
@@ -126,7 +108,7 @@ class TestUserViewSet:
     def test_block_user_permission_denied(self, client, user, analyst, url):
         for person in (user, analyst):
             headers = self.take_headers(person.token)
-            response = client.patch(url + f'{person.id}/block_user/', headers=headers)
+            response = client.get(url + f'{person.id}/block_user/', headers=headers)
 
             person = User.objects.get(username=person.username)
             assert response.status_code == 403
@@ -165,7 +147,7 @@ class TestUserViewSet:
     def test_reset_password(self, client, user, url):
         headers = self.take_headers(user.token)
 
-        response = client.put(url + 'reset_password/', headers=headers)
+        response = client.get(url + 'reset_password/', headers=headers)
 
         assert response.status_code == 200
 

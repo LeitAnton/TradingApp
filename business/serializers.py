@@ -1,8 +1,11 @@
 from django.db import IntegrityError
+from django.forms import model_to_dict
 from rest_framework import serializers
+from rest_framework.generics import get_object_or_404
 
 import business.utils
 from business.models import Currency, Order, Subscription, History, Portfolio
+from user.models import User
 
 
 class CurrencySerializer(serializers.ModelSerializer):
@@ -55,12 +58,22 @@ class UpdateOrderSerializer(OrderSerializer):
     def update(self, instance, validated_data):
         """Update an existing Order instance. """
 
-        user = self.context['request'].user
-        validated_data['user'] = user
-        data = business.utils.check_create_by_price_or_quantity(validated_data)
-        data = business.utils.check_order_type(data)
+        instance_dict = model_to_dict(instance)
+        currency = validated_data.pop('currency', None)
 
-        for key, value in data.items():
+        if currency is None:
+            currency = get_object_or_404(Currency, pk=instance_dict['currency'])
+
+        validated_data['user'] = get_object_or_404(User, pk=instance_dict['user'])
+        validated_data['currency'] = currency
+
+        for key, value in validated_data.items():
+            instance_dict[key] = value
+
+        data_after_check_create_by_price_or_quantity = business.utils.check_create_by_price_or_quantity(instance_dict)
+        data_after_check_order_type = business.utils.check_order_type(data_after_check_create_by_price_or_quantity)
+
+        for key, value in data_after_check_order_type.items():
             setattr(instance, key, value)
 
         instance.save()
