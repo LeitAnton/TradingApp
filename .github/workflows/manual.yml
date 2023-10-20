@@ -1,0 +1,30 @@
+name: Docker Compose CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+    
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Compose
+      run: |
+        docker-compose -f docker-compose.yml up -d
+      working-directory: ${{ github.workspace }}
+
+    - name: Build and run tests
+      run: |
+        docker-compose -f docker-compose.yml exec web pytest
+      working-directory: ${{ github.workspace }}
+
+    - name: Stop Docker Compose
+      run: |
+        docker-compose -f docker-compose.yml down
+      working-directory: ${{ github.workspace }}
