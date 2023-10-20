@@ -17,8 +17,9 @@ def constant_consumer():
     consumer.subscribe([topic])
 
     try:
-        for message in consumer:
-            update_currency_in_database(message.value)
+        while True:
+            for message in consumer:
+                update_currency_in_database(message.value)
     except KafkaConnectionError as error:
         logging.error(msg=f"Error connecting to Kafka: {error}")
 
