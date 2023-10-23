@@ -1,5 +1,10 @@
+import json
+import logging
+
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from business.models import Order
+
+from business.tasks import send_message_to_kafka_task
 
 
 def check_create_by_price_or_quantity(validated_data):
@@ -18,6 +23,7 @@ def check_create_by_price_or_quantity(validated_data):
         serializers.ValidationError: If the validation fails (e.g., missing 'price' or 'quantity').
 
     """
+    from business.models import Order
 
     create_by_price_or_quantity = validated_data['create_by_price_or_quantity']
     currency = validated_data['currency']
@@ -64,6 +70,7 @@ def check_order_type(validated_data):
         serializers.ValidationError: If the validation fails (e.g., missing 'match_price_per_currency_quantity').
 
     """
+    from business.models import Order
 
     order_type = validated_data['order_type']
     currency = validated_data['currency']
@@ -77,3 +84,35 @@ def check_order_type(validated_data):
         )
 
     return validated_data
+
+
+def send_action_currency(action, symbol):
+    topic_currency_action = 'topic_currency_action'
+    message = {
+        'action': action,
+        'symbol': symbol,
+    }
+    send_message_to_kafka_task(topic_currency_action, message)
+
+
+def send_currencies():
+    from business.models import Currency
+    currencies = Currency.objects.all().values_list('symbol')
+    topic_get_currencies = 'topic_get_currencies'
+    message = {
+        'currencies': currencies,
+    }
+    send_message_to_kafka_task(topic_get_currencies, message)
+
+
+def update_currency_in_database(data):
+    from business.models import Currency
+    try:
+        serializer_data = json.loads(data)
+        symbol = serializer_data['symbol']
+
+        currency = get_object_or_404(Currency, symbol=symbol)
+        currency.price_per_quantity = serializer_data['price']
+        currency.save()
+    except Exception as error:
+        logging.error(msg=f'Error updating currency in database: {error}')

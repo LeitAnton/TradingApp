@@ -6,5 +6,5 @@ do
 done
 
 # run a worker :)
-celery -A TradingApp worker --loglevel=info --concurrency 1 -E
+celery -A TradingApp worker --loglevel=info --concurrency 2 -E
 celery -A TradingApp worker -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler

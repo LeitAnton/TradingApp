@@ -22,6 +22,7 @@ django-celery-beat = "*"
 django-dynamic-fixture = "*"
 requests = "*"
 pytest-django = "*"
+kafka-python = "*"
 
 [dev-packages]
 
