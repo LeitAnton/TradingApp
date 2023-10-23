@@ -144,3 +144,5 @@ dmypy.json
 
 # example database
 drf_example
+
+Pipfile.lock

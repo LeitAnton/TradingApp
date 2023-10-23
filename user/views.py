@@ -1,4 +1,3 @@
-from django.shortcuts import get_list_or_404
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
@@ -6,10 +5,10 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
 from user.models import User
+from user.permissions import IsAnAuthor
 from user.serializers import (ChangePasswordSerializer, LoginSerializer,
                               RegistrationSerializer, ResetPasswordSerializer,
                               UserSerializer, OwnUserSerializer, AddBalanceToUserSerializer)
-from user.permissions import IsAnAuthor
 
 
 class UserViewSet(viewsets.GenericViewSet,

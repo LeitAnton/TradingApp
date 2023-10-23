@@ -17,6 +17,6 @@ echo "Ok"
 
 python3 manage.py migrate
 # python3 manage.py create_models
-python3 manage.py run_currencies_updating
+# python3 manage.py run_currencies_updating
 
 exec "$@"
