@@ -1,9 +1,9 @@
 import pytest
+from django_dynamic_fixture import G
 from rest_framework.test import APIClient
 
 from business.models import Currency, Order
 from user.models import User
-from ddf import G
 
 
 @pytest.fixture

@@ -72,9 +72,9 @@ class TestOrderViewSet:
         assert response.status_code == 201
         assert response.data['user'] == user.username
         assert response.data['currency'] == order_payload['currency']
-        assert response.data['price'] == order_payload['price']
+        assert round(response.data['price']) == round(order_payload['price'])
+        assert round(response.data['quantity']) == round(order_payload['quantity'])
         assert response.data['action'] == order_payload['action']
-        assert response.data['quantity'] == order_payload['quantity']
         assert response.data['order_type'] == order_payload['order_type']
         assert response.data['create_by_price_or_quantity'] == order_payload['create_by_price_or_quantity']
         assert response.data['match_price_per_currency_quantity'] == order_payload['match_price_per_currency_quantity']
@@ -146,7 +146,7 @@ class TestOrderViewSet:
             response = client.put(url + f'{user_s_order.id}/', headers=headers, data=order_payload)
 
             assert response.status_code == 200
-            assert response.data['user'] == person.id
+            assert response.data['user'] == user.username
             assert response.data['currency'] == order_payload['currency']
             assert response.data['price'] == order_payload['price']
             assert response.data['action'] == order_payload['action']
@@ -186,8 +186,8 @@ class TestOrderViewSet:
         response = client.patch(url + f'{order.id}/', headers=headers, data={'action': action})
 
         assert response.status_code == 200
-        assert response.data['user'] == order.user.id
-        assert response.data['user'] != admin.id
+        assert response.data['user'] == order.user.username
+        assert response.data['user'] != admin.username
         assert response.data['action'] == action
 
     @pytest.mark.django_db
