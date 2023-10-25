@@ -15,12 +15,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Create mynetwork
+        run: docker network create mynetwork
+        working-directory: ${{ github.workspace }}
+
       - name: Decrypt and create .env file
         run: echo ${{ secrets.DOCKER_ENV_FILE }} | base64 -d > .env
         working-directory: ${{ github.workspace }}
 
-      - name: Create mynetwork
-        run: docker network create mynetwork
+      - name: Create Pipfile
+        run: pipenv lock
         working-directory: ${{ github.workspace }}
 
       - name: Set up Docker Compose
